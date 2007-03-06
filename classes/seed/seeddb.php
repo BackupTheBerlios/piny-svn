@@ -4,6 +4,11 @@
 	include_once('server/settings.php');
 	require_once('db/db.php');
 	
+	define(PEERTYPE_PRINCIPAL, 'principal');
+	define(PEERTYPE_VIRGIN,    'virgin');
+	define(PEERTYPE_SENIOR,    'senior');
+	define(PEERTYPE_JUNIOR,    'junior');
+	
 	function splitArray($array, $char) {
 		$r = array();
 		$num = 0;
@@ -94,16 +99,25 @@
         }
         
         function getAddress() {
-        	echo var_dump($this->seed);
         	return $this->getIP() .':'. $this->getPort();
         }
         
         function toB64Seed() {
-        	return base64_encode($this->toSeed());
+        	return 'b|'. base64_encode($this->toSeed());
         }
         
-        function toSeed() {
-        	return '{'. implode(',', $this->seed) .'}';
+        function toPlainSeed() {
+        	return 'p|'. $this->toSeed();
+        }
+        
+        function toSeed($braces = true) {
+        	if ($braces) $r = '{';
+        	foreach ($this->seed as $key => $value) {
+        		if ($key != 'PeerType') $r .= "$key=$value,";
+        	}
+        	$r = substr($r, 0, -1);
+        	if ($braces) $sql .= '}';
+        	return $r;
         }
         
         function getArrayFromSeed($seed) {
@@ -126,12 +140,53 @@
     	return new peer($seed);
     }
     
+    function seeddbGetPeerFromHash($hash) {
+    }
+    
+    function seeddbGetRandomSeeds($count, $includeMe = true) {
+    	$seeddb = new db(SEEDDB);
+    	$arr[] = $seeddb->getAssoc(
+    			array(
+    					'Hash',
+    					'PeerType',
+    					'IPType',
+    					'Tags',
+    					'Port',
+    					'IP',
+    					'rI',
+    					'sI',
+    					'rU',
+    					'rI',
+    					'Uptime',
+    					'Version',
+    					'LastSeen',
+    					'Name',
+    					'CCount',
+    					'SCount',
+    					'news',
+    					'USpeed',
+    					'CRTCnt',
+    					'CRWCnt',
+    					'BDate',
+    					'LCount',
+    					'ICount',
+    					'ISpeed',
+    					'RSpeed',
+    					'Flags'
+    			));
+    	if (count($arr) < $count) $count = count($arr);
+    	if ($count > 1) $r = array_rand($arr, $count - 1);
+    	$mypeer = seeddbGetMyPeer();
+    	$r[] = $mypeer->toB64Seed();
+    	return $r;
+    }
+    
     function seeddbGetMyPeer() {
     	$seeddb = new db(SEEDDB);
     	$arr = $seeddb->getAssoc(
     			array(
     					'Hash',
-    					'Type' => 'PeerType',
+    					'PeerType',
     					'IPType',
     					'Tags',
     					'Port',

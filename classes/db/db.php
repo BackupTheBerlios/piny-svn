@@ -61,6 +61,7 @@
 		 *                        All items of the array are AND-combined.</p>
 		 *                     <p>If a string is passed, it will be used as the complete <code>WHERE</code>-part of the SQL-statement.</p>
 		 *                     <p>If <code>null</null> is passed, or the argument is not used at all, the selection won't be restricted.</p>
+		 * @param string colorarrkey <p>
 		 * @return             <p>an non-associative array <code>[line-number][column-number] => value</code> or <code>false</code>
 		 *                        if no row matching <code>cols</code> or <code>where</code> could be found.</p>
 		 */
@@ -83,7 +84,6 @@
 		 *                     <p>If <code>null</null> is passed, or the argument is not used at all, the selection won't be restricted.</p>
 		 * @return             <p>an <code>stdClass</code>-object containing the values of all selected columns as public variables or <code>false</code>
 		 *                        if no row matching <code>cols</code> or <code>where</code> could be found.</p>
-		 * @throws Exception   if either <code>cols</code> or </code>where</where> is not usable.
 		 */
 		/* public */
 		function getSingle($cols, $where) {

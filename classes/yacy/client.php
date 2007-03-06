@@ -7,14 +7,14 @@
 	
 	function clientQueryURLCount($peer) {
 		$mypeer = seeddbGetMyPeer();
-		$request = 'http://'. $peer->getAddress() .'/query.html'
+		$request = 'http://'. $peer->getAddress() .'/yacy/query.html'
 				.'?iam='. $mypeer->getHash()
 				.'&youare='. $peer->getHash()
 				.'&key='
 				.'&object=lurlcount'
 				.'&env='
 				.'&ttl=0';
-		$result = splitArray(file_get_contents($request), '=');
+		$result = splitArray(explode("\n", file_get_contents($request)), '=');
 		return $result['response'];
 	}
 	

@@ -4,7 +4,7 @@
 
 CREATE TABLE `piny_seeddb` (
 	`Hash` char(12),			-- peer-hash, 12 byte
-	`Type` tinyint,				-- peer-type: 0 = virgin, 1 = junior, 2 = senior, 3 = principal
+	`PeerType` varchar(9),			-- peer-type: virgin, junior, senior, principal
 	`IPType` varchar(40),		-- always "&empty;" as far as I have seen
 	`Tags` varchar(255),		-- self-defined tags for the own index
 	`Port` smallint UNSIGNED,	-- peer-port (0-65535)
@@ -16,7 +16,7 @@ CREATE TABLE `piny_seeddb` (
 	`Uptime` timestamp,			-- the peer's uptime
 	`Version` double(14,12),	-- the peer's yacy-version, i.e. v13.5230123443
 	`LastSeen` timestamp,		-- time this peer was last pinged
-	`name` varchar(40),			-- the peer's name
+	`Name` varchar(40),			-- the peer's name
 	`CCount` float(5),			-- connects per hour, i.e. 0.48
 	`SCount` smallint UNSIGNED,	-- number of seeds, this peer has stored
 	`news` varchar(255),			-- any news this peer knows about

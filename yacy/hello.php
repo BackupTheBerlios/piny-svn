@@ -1,6 +1,6 @@
 <?php
 	
-	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/piny/classes/');
+	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/classes/');
 	
 	include_once('server/settings.php');
 	include_once('./errors.php');
@@ -10,8 +10,7 @@
 	require_once('yacy/core.php');
 	require_once('db/db.php');
 	
-	$post = settingsCheckInput($_GET);
-	
+	$post = settingsCheckInput($_REQUEST);
 	if ($post['key'] && $post['seed'] && $post['count']) {
 		$peer = seeddbGetPeer($post['seed']);
 		$key = $post['key'];
@@ -19,9 +18,6 @@
 		
 		$db = new db(OPENHELLOS);
 		if (!$db->removeSingle(array('Hash' => $peer->getHash()))) ;//die(ERR_YACY_HELLO_NO_KEY.': '. $peer->getHash());
-		
-		$myversion = settingsGetVersion();
-		$uptime = settingsGetUptime();
 		
 		$urls = -1;
 		$clientip = $_SERVER['REMOTE_ADDR'];
@@ -42,7 +38,7 @@
 			$urls = clientQueryURLCount($peer);
 		}
 		
-		$peer->setLastSeenUTC();
+		//$peer->setLastSeenUTC();
 		
 		if ($urls >= 0) {
 			if ($peer->getPeerType == PEERTYPE_PRINCIPAL) {
@@ -59,14 +55,23 @@
 			}
 		}
 		
-		$seeds = seeddbGetRandomSeeds($count, true);
+		$myversion = settingsGetVersion();
+		$uptime = settingsGetUptime();
+		$mytime = date('YmdHis');
+		$mypeer = seeddbGetMyPeer();
+		$mytype = $mypeer->getPeerType();
 		
 		$result = "version=$myversion\n"
 				."uptime=$uptime\n"
 				."yourip=$yourip\n"
 				."yourtype=$yourtype\n"
-				."mytype=$mytype\n"
-				.implode("\n", $seeds);
+				."mytime=$mytime\n"
+				."mytype=$mytype\n";
+		$i = 0;
+		foreach (seeddbGetRandomSeeds($count, true) as $seed) {
+			$result .= "seed$i=$seed\n";
+			$i++;
+		}
 		
 		echo $result;
 		flush();
