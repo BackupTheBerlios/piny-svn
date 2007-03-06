@@ -38,9 +38,9 @@
 		 * @return an associative array <code>[line-number]['column-name'] => value</code>
 		 */
 		/* public */
-		function getAll() {
+		function getAll($colarrkey = null) {
 			$sql = 'SELECT * FROM `'. $this->table .'`;';
-			return $this->fetchArray($sql, DB_TYPE.'_ASSOC');
+			return $this->fetchArray($sql, DB_TYPE.'_ASSOC', $colarrkey);
 		}
 		
 		/**
@@ -58,9 +58,9 @@
 		 *                        if no row matching <code>cols</code> or <code>where</code> could be found.</p>
 		 */
 		/* public */
-		function getAssoc($cols, $where = null) {
+		function getAssoc($cols, $where = null, $colarrkey = null) {
 			$sql = $this->assSelect($cols) .' FROM `'. $this->table .'` '. $this->assWhere($where) .';';
-			return $this->db->fetchArray($sql, DB_TYPE.'_ASSOC');
+			return $this->db->fetchArray($sql, DB_TYPE.'_ASSOC', $colarrkey = null);
 		}
 		
 		/**
@@ -78,9 +78,9 @@
 		 *                        if no row matching <code>cols</code> or <code>where</code> could be found.</p>
 		 */
 		/* public */
-		function get($cols, $where = null) {
+		function get($cols, $where = null, $colarrkey = null) {
 			$sql = $this->assSelect($cols) .' FROM `'. $this->table .'` '. $this->assWhere($where) .';';
-			return $this->fetchArray($sql, DB_TYPE.'_NUM');
+			return $this->fetchArray($sql, DB_TYPE.'_NUM', $colarrkey);
 		}
 		
 		/**
@@ -109,13 +109,65 @@
 			return $r;
 		}
 		
+		function add($cols) {
+			$sql = 'INSERT INTO `'. $this->table .'` (';
+			foreach (array_keys($cols[0]) as $col) {
+				$sql .= $col .',';
+			}
+			$sql = substr($sql, 0, -1) .') VALUES (';
+			foreach ($cols as $col) {
+				foreach ($col as $value) {
+					if (is_string($value)) {
+						$sql .= "'$value',";
+					} else {
+						$sql .= "$value,":
+					}
+				}
+				$sql = substr($sql, 0, -1) .'), (';
+			}
+			$sql = substr($sql, 0, -2);
+			return $this->query($sql, $this->conn);
+		}
+		
+		/* public */
+		function addSingle($cols) {
+			$sql = 'INSERT INTO `'. $this->table .'` (';
+			foreach (array_keys($cols) as $col) {
+				$sql .= $col .',';
+			}
+			$sql = substr($sql, 0, -1) .') VALUES (';
+			foreach ($cols as $value) {
+				if (is_string($value)) {
+					$sql .= "'$value',";
+				} else {
+					$sql .= "$value,":
+				}
+			}
+			$sql = substr($sql, 0, -1) .';';
+			return $this->query($sql, $this->conn) || die(ERR_DB_QUERY.':'. $this->error());
+		}
+		
+		/* public */
+		function putSingle($cols) {
+		}
+		
+		function updateSingle($cols, $where) {
+		}
+		
+		function removeSingle($where) {
+		}
+		
 		/* private */
-		function fetchArray($sql, $flags) {
+		function fetchArray($sql, $flags, $colarrkey = null) {
 			if ($sql == null || !is_string($sql)) return null;
 			$res = $this->query($sql, $this->conn) || die(ERR_DB_QUERY.':'. $this->error());
 			$r = array();
 			while ($row = $fetch_array($res, $flags)) {
-				$r[] = $row;
+				if ($colarrkey == null) {
+					$r[] = $row;
+				} else {
+					$r[$row[$colarrkey]] = $row;
+				}
 			}
 			$free_result($res);
 			return $r;

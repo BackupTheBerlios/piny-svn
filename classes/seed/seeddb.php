@@ -1,7 +1,7 @@
 <?
 	
-	require_once('classes/server/settings.php');
-	require_once('classes/db/db.php');
+	include_once('../server/settings.php');
+	require_once('db/db.php');
 	
 	function splitArray($array, $char) {
 		$r = array();
@@ -23,13 +23,7 @@
         
         function peer($seed) {
         	if (is_string($seed)) {
-				switch (substr($seed, 0, 1)) {
-					case 'p': $plainlist = substr($seed, 2); break;                   // plain text
-					case 'b': $plainlist = base64_decode(substr($seed, 2)); break;    // base64-encoded
-					default: $plainlist = substr($seed, 2); break;
-				}
-				$plainlist = substr($plainlist, 1, -1);        // kill '{' on beginning and '}' at the end
-				$this->seed = splitArray(explode(',', $plainlist), '=');
+        		$this->seed = self::getArrayFromSeed($seed);
 			} else if (is_array($seed)) {
 				$this->seed = $seed;
 			}
@@ -75,6 +69,16 @@
         function toSeed() {
         	return '{'. implode(',', $this->seed) .'}';
         }
+        
+        function getArrayFromSeed($seed) {
+			switch (substr($seed, 0, 1)) {
+				case 'p': $plainlist = substr($seed, 2); break;                   // plain text
+				case 'b': $plainlist = base64_decode(substr($seed, 2)); break;    // base64-encoded
+				default: $plainlist = substr($seed, 2); break;
+			}
+			$plainlist = substr($plainlist, 1, -1);        // kill '{' on beginning and '}' at the end
+			return splitArray(explode(',', $plainlist), '=');
+		}
     }
     
     function seeddbGetPeer($seed) {
@@ -82,7 +86,53 @@
     }
     
     function seeddbGetMyPeer() {
-    	return new peer(dbGetFromHash(MYHASH, SEEDDB));
+    	$seeddb = new db(SEEDDB);
+    	$arr = $seeddb->getAssoc(
+    			array(
+    					'Hash',
+    					'Type' => 'PeerType',
+    					'IPType',
+    					'Tags',
+    					'Port',
+    					'IP',
+    					'rI',
+    					'sI',
+    					'rU',
+    					'rI',
+    					'Uptime',
+    					'Version',
+    					'LastSeen',
+    					'Name',
+    					'CCount',
+    					'SCount',
+    					'news',
+    					'USpeed',
+    					'CRTCnt',
+    					'CRWCnt',
+    					'BDate',
+    					'LCount',
+    					'ICount',
+    					'ISpeed',
+    					'RSpeed',
+    					'Flags'
+    			),
+    			array('Hash' => MYHASH)
+    	);
+    	if ($arr === false) throw new Exception('MYHASH could not be found in seed-db');
+    	return new seed($arr[0]);
     }
 	
+	function updatePeer($hash, $version, $uptime, $type) {
+		$db = new db(SEEDDB);
+		return $db->updateSingle(array('Version' => $version, 'Uptime' => $uptime, 'Type' => $type), array('Hash' => $hash));
+	}
+	
+	function updateFromSeeds($seeds) {
+		$db = new db(SEEDDB);
+		$i = 0;
+		foreach ($seeds as $seed) {
+			if ($db->putSingle(peer::getArrayFromSeed($seed))) $i++;
+		}
+		return $i;
+	}
 ?>
