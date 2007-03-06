@@ -16,10 +16,10 @@ CREATE TABLE `piny_seeddb` (
 	`Uptime` timestamp,			-- the peer's uptime
 	`Version` double(14,12),	-- the peer's yacy-version, i.e. v13.5230123443
 	`LastSeen` timestamp,		-- time this peer was last pinged
-	`Name` varchar(40),			-- the peer's name
+	`name` varchar(40),			-- the peer's name
 	`CCount` float(5),			-- connects per hour, i.e. 0.48
 	`SCount` smallint UNSIGNED,	-- number of seeds, this peer has stored
-	`news` varchar(255)			-- any news this peer knows about
+	`news` varchar(255),			-- any news this peer knows about
 	`USpeed` smallint UNSIGNED,	-- computed uplink speed of this peer
 	`CRTCnt` smallint UNSIGNED,	-- number of files: citation rank other
 	`CRWCnt` smallint UNSIGNED,	-- number of files: citation rank own

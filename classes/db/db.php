@@ -1,34 +1,21 @@
 <?php
+	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/piny/classes/');
 	
-	include_once('../server/settings.php');
+	include_once('server/settings.php');
 	include_once('db/errors.php');
 	
 	class db {
 		var $conn;				// connection resource
 		var $table;				// name of the table
 		
-		var $connect;			// name of connect-method, dependant on DB_TYPE
-		var $close;				// name of close-method, dependant on DB_TYPE
-		var $query;				// name of query-method, dependant on DB_TYPE
-		var $fetch_array;		// name of fetch_array-method, dependant on DB_TYPE
-		var $free_result;		// name of free_result-method, dependant on DB_TYPE
-		var $escape_string;		// name of escape_string-method, dependant on DB_TYPE
-		var $select_db;			// name of select_db-method, dependant on DB_TYPE
-		var $error;				// name of error-method, depandant on DB_TYPE
-		var $fetch_object;		// name of fetch_object-method, dependant on DB_TYPE
-		
-		function __construct($table) {
-			if (!is_string(DB_TYPE) || strlen(DB_TYPE) == 0) throw new Exception('DB_TYPE has not been set!');
-			$this->connect = DB_TYPE.'_connect';
-			$this->close = DB_TYPE.'_close';
-			$this->query = DB_TYPE.'_query';
-			$this->fetch_array = DB_TYPE.'_fetch_array';
-			$this->free_result = DB_TYPE.'_free_result';
-			$this->escape_string = DB_TYPE.'_escape_string';
-			$this->select_db = DB_TYPE.'_select_db';
+		function db($table) {
+			if (!is_string(DB_TYPE) || strlen(DB_TYPE) == 0) die('DB_TYPE has not been set!');
+			$connect = DB_TYPE.'_connect';
+			$select_db = DB_TYPE.'_select_db';
+			$error = DB_TYPE.'_error';
 			
-			$this->conn = $this->connect(DB_HOST.':'.DB_PORT, DB_USER, DB_PWD, false) || die(ERR_DB_CONNECT.':'. $this->error());
-			$this->select_db(DB_NAME, $this->conn) || die(ERR_DB_SELECT.':'. $this->error());
+			$this->conn = $connect(DB_HOST.':'.DB_PORT, DB_USER, DB_PWD, false) or die(ERR_DB_CONNECT.':'. $error());
+			$select_db(DB_NAME, $this->conn) or die(ERR_DB_SELECT.':'. $error());
 			$this->table = $table;
 		}
 		
@@ -40,7 +27,7 @@
 		/* public */
 		function getAll($colarrkey = null) {
 			$sql = 'SELECT * FROM `'. $this->table .'`;';
-			return $this->fetchArray($sql, DB_TYPE.'_ASSOC', $colarrkey);
+			return $this->fetchArray($sql, constant(strtoupper(DB_TYPE).'_ASSOC'), $colarrkey);
 		}
 		
 		/**
@@ -60,7 +47,7 @@
 		/* public */
 		function getAssoc($cols, $where = null, $colarrkey = null) {
 			$sql = $this->assSelect($cols) .' FROM `'. $this->table .'` '. $this->assWhere($where) .';';
-			return $this->db->fetchArray($sql, DB_TYPE.'_ASSOC', $colarrkey = null);
+			return $this->fetchArray($sql, constant(strtoupper(DB_TYPE).'_ASSOC'), $colarrkey = null);
 		}
 		
 		/**
@@ -80,7 +67,7 @@
 		/* public */
 		function get($cols, $where = null, $colarrkey = null) {
 			$sql = $this->assSelect($cols) .' FROM `'. $this->table .'` '. $this->assWhere($where) .';';
-			return $this->fetchArray($sql, DB_TYPE.'_NUM', $colarrkey);
+			return $this->fetchArray($sql, constant(strtoupper(DB_TYPE).'_NUM'), $colarrkey);
 		}
 		
 		/**
@@ -100,12 +87,14 @@
 		 */
 		/* public */
 		function getSingle($cols, $where) {
-			if ($col == null || !is_string($col)) throw new Exception('Illegal Argument: $col: '. $col);
-			if ($where == null || strlen($w = self::assWhere($where)) == 0) throw new Exception('Illegal Argument: $where: '. $where);
+			if ($col == null || !is_string($col)) die('Illegal Argument: $col: '. $col);
+			if ($where == null || strlen($w = self::assWhere($where)) == 0) die('Illegal Argument: $where: '. $where);
 			$sql = self::assSelect($cols) .' FROM `'. $this->table ."` $w;";
-			$res = $this->query($sql, $this->conn) || die(ERR_DB_QUERY.':'. $this->error());
+			$query = DB_TYPE.'_query';
+			$res = $query($sql, $this->conn) or die(ERR_DB_QUERY.':'. $this->error());
 			$r = $this->fetch_object($res);
-			$this->free_result($res);
+			$free_result = DB_TYPE.'_free_result';
+			$free_result($res);
 			return $r;
 		}
 		
@@ -120,13 +109,14 @@
 					if (is_string($value)) {
 						$sql .= "'$value',";
 					} else {
-						$sql .= "$value,":
+						$sql .= "$value,";
 					}
 				}
 				$sql = substr($sql, 0, -1) .'), (';
 			}
 			$sql = substr($sql, 0, -2);
-			return $this->query($sql, $this->conn);
+			$query = DB_TYPE.'_query';
+			return $query($sql, $this->conn);
 		}
 		
 		/* public */
@@ -140,11 +130,13 @@
 				if (is_string($value)) {
 					$sql .= "'$value',";
 				} else {
-					$sql .= "$value,":
+					$sql .= "$value,";
 				}
 			}
 			$sql = substr($sql, 0, -1) .';';
-			return $this->query($sql, $this->conn) || die(ERR_DB_QUERY.':'. $this->error());
+			$query = DB_TYPE.'_query';
+			$error = DB_TYPE.'_error';
+			return $query($sql, $this->conn) or die(ERR_DB_QUERY.':'. $error());
 		}
 		
 		/* public */
@@ -160,8 +152,11 @@
 		/* private */
 		function fetchArray($sql, $flags, $colarrkey = null) {
 			if ($sql == null || !is_string($sql)) return null;
-			$res = $this->query($sql, $this->conn) || die(ERR_DB_QUERY.':'. $this->error());
+			$query = DB_TYPE.'_query';
+			$error = DB_TYPE.'_error';
+			$res = $query($sql, $this->conn) or die(ERR_DB_QUERY.':'. $error());
 			$r = array();
+			$fetch_array = DB_TYPE.'_fetch_array';
 			while ($row = $fetch_array($res, $flags)) {
 				if ($colarrkey == null) {
 					$r[] = $row;
@@ -169,6 +164,7 @@
 					$r[$row[$colarrkey]] = $row;
 				}
 			}
+			$free_result = DB_TYPE.'_free_result';
 			$free_result($res);
 			return $r;
 		}
@@ -176,12 +172,13 @@
 		/* private */
 		function assSelect($cols) {
 			$sql = 'SELECT ';
+			$escape_string = DB_TYPE.'_escape_string';
 			if (is_array($cols)) {
 				foreach ($cols as $col => $colname) {
-					if (!is_integer($col)) $sql .= '`'. $this->escape_string($col) .'` AS ';
-					$sql .= $this->escape_string($colname) .',';
+					if (!is_integer($col)) $sql .= '`'. $escape_string($col) .'` AS ';
+					$sql .= $escape_string($colname) .', ';
 				}
-				$sql = substr($sql, 0, -1);
+				$sql = substr($sql, 0, -2);
 			} else {
 				$sql .= '*';
 			}
@@ -191,20 +188,22 @@
 		/* private */
 		function assWhere($where) {
 			$sql = '';
+			$escape_string = DB_TYPE.'_escape_string';
 			if (is_array($where)) {
 				$sql .= 'WHERE ';
 				foreach ($where as $key => $expr) {
-					$sql .= '\''. $this->escape_string($key) .'\' = `'. $this->escape_string($expr) .'` AND ';
+					$sql .= '`'. $escape_string($key) .'` = \''. $escape_string($expr) .'\' AND ';
 				}
 				$sql = substr($sql, 0, -5);
 			} else if (is_string($where)) {
-				$sql .= 'WHERE '. $this->escape_string($where);
+				$sql .= 'WHERE '. $escape_string($where);
 			}
 			return $sql;
 		}
 		
 		function __destruct() {
-			$this->close($this->conn);
+			$close = DB_TYPE.'_close';
+			$close($this->conn);
 		}
 	}
 	

@@ -1,6 +1,7 @@
-<?
+<?php
+	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/piny/classes/');
 	
-	include_once('../server/settings.php');
+	include_once('server/settings.php');
 	require_once('db/db.php');
 	
 	function splitArray($array, $char) {
@@ -23,7 +24,7 @@
         
         function peer($seed) {
         	if (is_string($seed)) {
-        		$this->seed = self::getArrayFromSeed($seed);
+        		$this->seed = peer::getArrayFromSeed($seed);
 			} else if (is_array($seed)) {
 				$this->seed = $seed;
 			}
@@ -58,7 +59,42 @@
         function getNCount()       { return $this->seed['NCount']; }
         function getFlags()        { return $this->seed['Flags']; }
         
+        function setHash($value)         { $this->seed['Hash'] = $value; }
+        function setIPType($value)       { $this->seed['IPType'] = $value; }
+        function setTags($value)         { $this->seed['Tags'] = $value; }
+        function setPort($value)         { $this->seed['Port'] = $value; }
+        function setIP($value)           { $this->seed['IP'] = $value; }
+        function setRI($value)           { $this->seed['rI'] = $value; }
+        function setUptime($value)       { $this->seed['Uptime'] = $value; }
+        function setVersion($value)      { $this->seed['Version'] = $value; }
+        function setUTC($value)          { $this->seed['UTC'] = $value; }
+        function setPeerType($value)     { $this->seed['PeerType'] = $value; }
+        function setSI($value)           { $this->seed['sI'] = $value; }
+        function setLastSeen($value)     { $this->seed['LastSeen'] = $value; }
+        function setName($value)         { $this->seed['Name'] = $value; }
+        function setCCount($value)       { $this->seed['CCount'] = $value; }
+        function setSCount($value)       { $this->seed['SCount'] = $value; }
+        function setNews($value)         { $this->seed['news'] = $value; }
+        function setUSpeed($value)       { $this->seed['USpeed'] = $value; }
+        function setCRTCount($value)     { $this->seed['CRTCnt'] = $value; }
+        function setCRWCount($value)     { $this->seed['CRWCnt'] = $value; }
+        function setBirthDate($value)    { $this->seed['BDate'] = $value; }
+        function setLinks($value)        { $this->seed['LCount'] = $value; }
+        function setRU($value)           { $this->seed['rU'] = $value; }
+        function setWords($value)        { $this->seed['ICount'] = $value; }
+        function setSU($value)           { $this->seed['sU'] = $value; }
+        function setISpeed($value)       { $this->seed['ISpeed'] = $value; }
+        function setRSpeed($value)       { $this->seed['RSpeed'] = $value; }
+        function setNCount($value)       { $this->seed['NCount'] = $value; }
+        function setFlags($value)        { $this->seed['Flags'] = $value; }
+        
+        function getVersionDbl() {
+        	$version = $this->getVersion();
+        	return (double)$version;
+        }
+        
         function getAddress() {
+        	echo var_dump($this->seed);
         	return $this->getIP() .':'. $this->getPort();
         }
         
@@ -77,7 +113,12 @@
 				default: $plainlist = substr($seed, 2); break;
 			}
 			$plainlist = substr($plainlist, 1, -1);        // kill '{' on beginning and '}' at the end
-			return splitArray(explode(',', $plainlist), '=');
+			$arr = splitArray(explode(',', $plainlist), '=');
+			$r = array();
+			foreach ($arr as $key => $val) {
+				$r[trim($key)] = trim($val);
+			}
+			return $r;
 		}
     }
     
@@ -118,8 +159,8 @@
     			),
     			array('Hash' => MYHASH)
     	);
-    	if ($arr === false) throw new Exception('MYHASH could not be found in seed-db');
-    	return new seed($arr[0]);
+    	if ($arr === false || count($arr) == 0) die('MYHASH could not be found in seed-db');
+    	return new peer($arr[0]);
     }
 	
 	function updatePeer($hash, $version, $uptime, $type) {
@@ -129,10 +170,10 @@
 	
 	function updateFromSeeds($seeds) {
 		$db = new db(SEEDDB);
-		$i = 0;
+		$arr = array();
 		foreach ($seeds as $seed) {
-			if ($db->putSingle(peer::getArrayFromSeed($seed))) $i++;
+			$arr[] = peer::getArrayFromSeed($seed);
 		}
-		return $i;
+		return $db->put($arr);
 	}
 ?>

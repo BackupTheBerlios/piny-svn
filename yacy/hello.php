@@ -1,7 +1,9 @@
 <?php
 	
-	include_once('../classes/server/settings.php');
-	include_once('errors.php');
+	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/piny/classes/');
+	
+	include_once('server/settings.php');
+	include_once('./errors.php');
 	require_once('seed/seeddb.php');
 	require_once('yacy/client.php');
 	require_once('yacy/version.php');
@@ -16,7 +18,7 @@
 		$count = $post['count'];
 		
 		$db = new db(OPENHELLOS);
-		if (!$sb->removeSingle(array('Hash' => $peer-getHash()))) die(ERR_YACY_HELLO_NO_KEY.': '. $peer->getHash());
+		if (!$db->removeSingle(array('Hash' => $peer->getHash()))) ;//die(ERR_YACY_HELLO_NO_KEY.': '. $peer->getHash());
 		
 		$myversion = settingsGetVersion();
 		$uptime = settingsGetUptime();

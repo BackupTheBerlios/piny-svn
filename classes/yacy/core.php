@@ -1,6 +1,8 @@
 <?php
 	
-	include_once('../server/settings.php');
+	ini_set('include_path', ini_get('include_path').':/var/www/localhost/htdocs/piny/classes/');
+	
+	include_once('server/settings.php');
 	include_once('yacy/errors.php');
 	require_once('db/db.php');
 	require_once('seed/seeddb.php');
@@ -12,13 +14,8 @@
 		$host = 'http://'. $peer->getAddress() .'/yacy/hello.html';
 		$args = "key=$key&seed=".MYHASH."&count=20";
 		$hello = explode("\n", file_get_contents("$host?$args"));
-		echo 'corePeerPing '. $peer->getHash() .':';
-		echo updatePeer(
-				$peer->getHash(),
-				explode('=', $hello[0])[1],
-				explode('=', $hello[1])[1],
-				explode('=', $hello[4])[1]
-		) . chr(10);
+		$arr = splitArray(array_slice($hello, 0, 4));
+		updatePeer($peer->getHash(), $arr['myversion'], $arr['uptime'], $arr['mytype']);
 		updateFromSeeds(array_slice($hello, 5));
 	}
 	
